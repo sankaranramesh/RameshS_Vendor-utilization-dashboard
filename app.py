@@ -22,7 +22,13 @@ if booked_file and forecast_file and capacity_file:
     booked_df["Month"] = booked_df["PO exfac date"].dt.to_period("M")
     booked_cleaned = booked_df.groupby(["VENDOR", "Month"], as_index=False).agg({"Qty": "sum"})
 
-    forecast_df["Vendor ex-factory"] = pd.to_datetime(forecast_df["Vendor ex-factory"], errors="coerce")
+    # Auto-detect ex-factory column
+    possible_date_cols = [col for col in forecast_df.columns if "ex-factory" in col.lower()]
+    if not possible_date_cols:
+        st.error("❌ Could not find a column like 'Vendor ex-factory' in your forecast file.")
+        st.stop()
+    forecast_df["Vendor ex-factory"] = pd.to_datetime(forecast_df[possible_date_cols[0]], errors="coerce")
+
     forecast_df["Month"] = forecast_df["Vendor ex-factory"].dt.to_period("M")
     forecast_cleaned = forecast_df.groupby(["Vendor Name", "Month"], as_index=False).agg(
         {"Confirmed New Planned Units": "sum"}
